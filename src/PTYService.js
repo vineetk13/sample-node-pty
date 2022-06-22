@@ -17,15 +17,15 @@ class PTY {
   startPtyProcess() {
     this.ptyProcess = pty.spawn(this.shell, [], {
       name: "xterm-color",
-      cwd: process.env.HOME, // Which path should terminal start
+      cwd: "/", // Which path should terminal start - HOME
       env: process.env // Pass environment variables
-    });
+  })
 
     // Add a "data" event listener.
     this.ptyProcess.on("data", data => {
       // Whenever terminal generates any data, send that output to socket.io client to display on UI
       this.sendToClient(data);
-    });
+    })
   }
 
   /**
