@@ -3,7 +3,9 @@ const pty = require("node-pty");
 
 class PTY {
   constructor(socket) {
-    this.shell = os.platform() === "win32" ? "cmd.exe" : "bash";
+    this.shell = "bash";
+    // this.shell = os.platform() === "win32" ? "cmd.exe" : "bash";
+
     this.ptyProcess = null;
     this.socket = socket;
 
