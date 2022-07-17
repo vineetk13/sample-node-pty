@@ -13,9 +13,7 @@ class PTY {
     this.startPtyProcess();
   }
 
-  /**
-   * Spawn an instance of pty with a selected shell.
-   */
+  //Spawn an instance of pty with a selected shell.
   startPtyProcess() {
     this.ptyProcess = pty.spawn(this.shell, [], {
       name: "xterm-color",
@@ -30,12 +28,12 @@ class PTY {
     })
   }
 
-  /**
-   * Use this function to send in the input to Pseudo Terminal process.
-   * @param {*} data Input from user like command sent from terminal UI
-   */
+  // Use this function to send in the input to Pseudo Terminal process.
+  //  @param {*} data Input from user like command sent from terminal UI
 
   write(data) {
+    console.log('------ PID: ', this.ptyProcess.pid)
+    // console.log('------ INPUT: ', data)
     this.ptyProcess.write(data);
   }
 
