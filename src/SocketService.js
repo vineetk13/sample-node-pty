@@ -35,18 +35,30 @@ class SocketService {
             // Create a new pty service for espercli when client connects.
             this.espercliPty = new PTYService(this.socket, "espercli")
 
-            this.socket.on("preconfigure", (callback) => {
-                this.espercliPty.write(`espercli configure -s\n`)
-                this.espercliPty.write(`gojek\n`)
-                this.espercliPty.write(`I5IbgZUHxBXqAiK7zsKnXeY3hm0bD5\n`)
-                callback(
-                    "Esper CLI configuration successful with your enterprise details"
-                )
+            const timeoutCommand = (command) => {
+                return new Promise((res) => {
+                    setTimeout(() => {
+                        this.espercliPty.write(command)
+                        res("Done")
+                    }, 1000)
+                })
+            }
+
+            this.socket.on("preconfigure", async (callback) => {
+                await timeoutCommand(`espercli configure -s\n`)
+                await timeoutCommand(`gojek\n`)
+                
+                await timeoutCommand(`I5IbgZUHxBXqAiK7zsKnXeY3hm0bD5\n`)
+                
+                setTimeout(() => {
+                    callback("Esper CLI configuration successful with your enterprise details")
+                    setSessionReady()
+                }, 1000)
             })
 
 
-            this.socket.on("initialize", (deviceName, callback) => {
-                this.espercliPty.write(`espercli secureadb connect -d ${deviceName}`)
+            this.socket.on("initialize", async (deviceName, callback) => {
+                await timeoutCommand(`espercli secureadb connect -d ${deviceName}\n`)
                 callback(
                     "Esper CLI initialized with device name for secureadb connect"
                 )
@@ -56,12 +68,13 @@ class SocketService {
             const setSessionReady = () => {
                 this.adbPty = new PTYService(this.socket)
                 this.socket.emit("sessionReady")
+                // Listen to input after sessionReady and adbPty is started
+                this.socket.on("adbinput", (input) => {
+                    this.adbPty.write(input)
+                })
             }
 
-            // Listen to input after sessionReady and adbPty is started
-            this.socket.on("adbinput", (input) => {
-                this.adbPty.write(input)
-            })
+            
         })
     }
 }

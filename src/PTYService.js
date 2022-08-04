@@ -18,8 +18,8 @@ class PTY {
             name: `process-${this.name}`,
             cwd: "/", // Which path should terminal start - HOME
             env: process.env, // Pass environment variables
-            cols: 150,
-            rows: 40,
+            cols: 250,
+            // rows: 25,
         })
 
         // Add a "data" event listener.
