@@ -1,46 +1,60 @@
-const os = require("os");
-const pty = require("node-pty");
-
+const os = require("os")
+const pty = require("node-pty")
+var pidusage = require("pidusage")
 class PTY {
-  constructor(socket) {
-    this.shell = "bash";
-    // this.shell = os.platform() === "win32" ? "cmd.exe" : "bash";
+    constructor(socket, name) {
+        this.shell = "bash"
 
-    this.ptyProcess = null;
-    this.socket = socket;
+        this.ptyProcess = null
+        this.socket = socket
 
-    // Initialize PTY process.
-    this.startPtyProcess();
-  }
+        // Initialize PTY process.
+        this.startPtyProcess()
+    }
 
-  //Spawn an instance of pty with a selected shell.
-  startPtyProcess() {
-    this.ptyProcess = pty.spawn(this.shell, [], {
-      name: "xterm-color",
-      cwd: "/", // Which path should terminal start - HOME
-      env: process.env // Pass environment variables
-  })
+    //Spawn an instance of pty with a selected shell.
+    startPtyProcess() {
+        this.ptyProcess = pty.spawn(this.shell, [], {
+            name: `process-${this.name}`,
+            cwd: "/", // Which path should terminal start - HOME
+            env: process.env, // Pass environment variables
+            cols: 150,
+            rows: 40,
+        })
 
-    // Add a "data" event listener.
-    this.ptyProcess.on("data", data => {
-      // Whenever terminal generates any data, send that output to socket.io client to display on UI
-      this.sendToClient(data);
-    })
-  }
+        // Add a "data" event listener.
+        this.ptyProcess.on("data", (data) => {
+            // Whenever terminal generates any data, send that output to socket.io client to display on UI
+            this.sendToClient(data)
+        })
 
-  // Use this function to send in the input to Pseudo Terminal process.
-  //  @param {*} data Input from user like command sent from terminal UI
+        const compute = async () => {
+            const stats = await pidusage(this.ptyProcess.pid)
+            this.socket.emit("resourceStats", stats)
+        }
 
-  write(data) {
-    console.log('------ PID: ', this.ptyProcess.pid)
-    // console.log('------ INPUT: ', data)
-    this.ptyProcess.write(data);
-  }
+        // Compute resource statistics every 3 seconds:
+        const interval = async (time) => {
+            setTimeout(async () => {
+                await compute()
+                interval(time)
+            }, time)
+        }
 
-  sendToClient(data) {
-    // Emit data to socket.io client in an event "output"
-    this.socket.emit("output", data);
-  }
+        interval(3000)
+    }
+
+    // Use this function to send in the input to Pseudo Terminal process.
+    //  @param {*} data Input from user like command sent from terminal UI
+
+    write(data) {
+        this.ptyProcess.write(data)
+    }
+
+    sendToClient(data) {
+        // Emit data to socket.io client in an event "output"
+        this.socket.emit("output", data)
+    }
 }
 
-module.exports = PTY;
+module.exports = PTY

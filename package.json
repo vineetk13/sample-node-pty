@@ -9,10 +9,12 @@
   },
   "dependencies": {
     "node-pty": "0.9.0",
+    "pidusage": "^3.0.0",
     "socket.io": "4.5.1"
   },
   "devDependencies": {
-    "nodemon": "1.18.4"
+    "nodemon": "1.18.4",
+    "prettier": "2.7.1"
   },
   "keywords": []
 }

@@ -1,0 +1,27 @@
+# Workflow name.
+name: Deploy to heroku.
+
+# Run workflow on every push to master branch.
+on:
+  push:
+    branches: [main]
+
+# Workflows jobs.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # Check-out your repository.
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Build, Push and Release a Docker container to Heroku. 
+        uses: gonuit/heroku-docker-deploy@v1.3.3 # GitHub action name 
+        with:
+          email: ${{ secrets.HEROKU_EMAIL }}
+          
+          heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
+          
+          heroku_app_name: ${{ secrets.HEROKU_APP_NAME }}
+
+          
