@@ -6,6 +6,9 @@ const readline = require('readline')
 
 const PTYService = require("./PTYService")
 
+const ab2str = (buf) => {
+      return String.fromCharCode.apply(null, new Uint8Array(buf))
+}
 class SocketService {
     constructor() {
         this.socket = null
@@ -25,25 +28,37 @@ class SocketService {
         })
         console.log("Created socket server. Waiting for client connection.")
 
-        const initialize = () => {
-            const deviceinitProcess = spawn("espercli", ["secureadb", "connect", "-d", "EPR-NZN-AAAWA"], { cwd: "/" })
+        const initialize = (deviceName) => {
+            io.emit("startingInit")
+            const deviceinitProcess = spawn("espercli", ["secureadb", "connect", "-d", deviceName], { cwd: "/" })
 
             let deviceinitProcessOutput = ""
             let deviceinitProcessError = ""
 
-            deviceinitProcess.on("exit", function (code, signal) {
+            // close happens after process exit and all attached stdio streams have been closed
+            deviceinitProcess.on("close", function (code, signal) {
                 console.log(`deviceinitProcess process exited with code ${code} and signal ${signal}`)
+                console.log('----- ERrror mesg: ', deviceinitProcessError)
 
                 // On successfulExit
                 if(code === 0 && signal === null) {
-                    socket.emit("initialized", { 
-                        success: true, 
-                        message: "Success", 
-                        data: deviceinitProcessOutput
-                    })
+                    if(deviceinitProcessError === '') {
+                        io.emit("initialized", { 
+                            success: true, 
+                            message: "Success", 
+                            data: deviceinitProcessOutput
+                        })
+                    } else {
+                        io.emit("initialized", { 
+                            success: false, 
+                            message: `Failed`,
+                            data: deviceinitProcessError
+                        })
+                    }
+                        
                 }
                 else {
-                    socket.emit("initialized", { 
+                    io.emit("initialized", { 
                         success: false, 
                         message: `Failed`,
                         data: deviceinitProcessError
@@ -52,27 +67,20 @@ class SocketService {
             })
 
             deviceinitProcess.stdout.on("data", (data) => {
-                preconfigProcessOutput = data.toString()
+                deviceinitProcessOutput = data.toString()
+                // io.emit("output", data.toString())
                 console.log(`-------------init process stdout:\n${data}`)
             })
             deviceinitProcess.stderr.on("data", (data) => {
-                preconfigProcessError = data.toString()
+                if(deviceinitProcessError === ''){
+                    deviceinitProcessError = data.toString()
+                    deviceinitProcess.kill()
+                }
                 console.error(`---------init process stderr:\n${data}`)
             })
         }
 
-        io.on("connection", (socket) => {
-            console.log("Client connect to socket.", socket.id)
-
-            this.socket = socket
-
-            this.socket.on("disconnect", () => {
-                console.log("Disconnected Socket: ", socket.id)
-                if (this.adbPty !== null) {
-                    this.adbPty.killPtyProcess()
-                }
-            })
-
+        const preconfigure = (socket) => {
             const preconfigProcess = spawn("espercli", ["configure", "-s"], { cwd: "/" })
             preconfigProcess.stdin.setEncoding('utf-8')
             preconfigProcess.stdout.pipe(process.stdout);
@@ -86,16 +94,17 @@ class SocketService {
 
             preconfigProcess.on("exit", function (code, signal) {
                 console.log(`preconfigProcess process exited with code ${code} and signal ${signal}`)
-
+                
                 // On successfulExit
                 if(code === 0 && signal === null) {
                     socket.emit("preconfigured", { 
                         success: true, 
                         message: "Successfully configured espercli with your credentials",
                         data: preconfigProcessOutput
-                    }, () => {
-                        // Start device initiliation after client's ack'ment
-                        initialize()
+                    }, (deviceName, connected) => {
+                        if(connected)
+                            // Start device initiliation after client's ack'ment
+                            initialize(deviceName)
                     })
                 }
                 else {
@@ -109,18 +118,29 @@ class SocketService {
 
             preconfigProcess.stdout.on("data", (data) => {
                 preconfigProcessOutput = data.toString()
-                // console.log(`-------------preconf process stdout:\n${data}`)
+                console.log(`-------------preconf process stdout:\n${ab2str(data)}`)
             })
             preconfigProcess.stderr.on("data", (data) => {
                 preconfigProcessError = data.toString()
                 // console.error(`---------preconf process stderr:\n${data}`)
             })
+        }
 
-            
+        io.on("connection", (socket) => {
+            console.log("Client connect to socket.", socket.id)
 
+            this.socket = socket
+            console.log('--------- SERVER SOCKET: ', socket.connected)
 
-            // Create a new pty service for espercli when client connects.
-            // this.espercliPty = new PTYService(this.socket, "espercli")
+            this.socket.on("disconnect", () => {
+                console.log("Disconnected Socket: ", socket.id)
+                if (this.adbPty !== null) {
+                    this.adbPty.killPtyProcess()
+                }
+            })
+
+            if(socket.connected)
+                preconfigure(this.socket)
 
             const timeoutCommand = (command) => {
                 return new Promise((res) => {
@@ -130,19 +150,6 @@ class SocketService {
                     }, 1000)
                 })
             }
-
-            // this.socket.on("preconfigure", async (callback) => {
-            //     await timeoutCommand(`espercli configure -s\n`)
-            //     await timeoutCommand(`gojek\n`)
-
-            //     await timeoutCommand(`I5IbgZUHxBXqAiK7zsKnXeY3hm0bD5\n`)
-
-            //     setTimeout(() => {
-            //         callback(
-            //             "Esper CLI configuration successful with your enterprise details"
-            //         )
-            //     }, 1000)
-            // })
 
             this.socket.on("initialize", async (deviceName, callback) => {
                 await timeoutCommand(
