@@ -72,7 +72,7 @@ class SocketService {
                 console.log(`-------------init process stdout:\n${data}`)
             })
             deviceinitProcess.stderr.on("data", (data) => {
-                if(deviceinitProcessError === ''){
+                if(deviceinitProcessError === '' && !data.toString().includes('SyntaxWarning:')){
                     deviceinitProcessError = data.toString()
                     deviceinitProcess.kill()
                 }
