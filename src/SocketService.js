@@ -30,7 +30,7 @@ class SocketService {
 
         const initialize = (deviceName) => {
             io.emit("startingInit")
-            const deviceinitProcess = spawn("espercli", ["secureadb", "connect", "-d", deviceName], { cwd: "/" })
+            const deviceinitProcess = spawn("espercli", ["-D", "secureadb", "connect", "-d", deviceName], { cwd: "/" })
 
             let deviceinitProcessOutput = ""
             let deviceinitProcessError = ""
@@ -85,8 +85,8 @@ class SocketService {
             preconfigProcess.stdin.setEncoding('utf-8')
             preconfigProcess.stdout.pipe(process.stdout);
 
-            preconfigProcess.stdin.write("sbipl\n")
-            preconfigProcess.stdin.write("7R8Ke5SNyOYx0N2NzC9XcPlbqTQJuG\n")
+            preconfigProcess.stdin.write("olpcj\n")
+            preconfigProcess.stdin.write("f6hpTc8nnRgo6WrAanTCnGgE9gcMWD\n")
             preconfigProcess.stdin.end()
 
             let preconfigProcessOutput = ""
