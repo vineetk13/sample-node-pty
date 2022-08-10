@@ -31,6 +31,8 @@ class SocketService {
         const initialize = (deviceName) => {
             io.emit("startingInit")
             const deviceinitProcess = spawn("espercli", ["-D", "secureadb", "connect", "-d", deviceName], { cwd: "/" })
+            deviceinitProcess.stdin.setEncoding('utf-8')
+            deviceinitProcess.stdout.pipe(process.stdout)
 
             let deviceinitProcessOutput = ""
             let deviceinitProcessError = ""
