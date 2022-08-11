@@ -3,13 +3,8 @@ const socketIO = require("socket.io")
 const { Server } = require("socket.io")
 const { exec, spawn } = require("child_process")
 const readline = require("readline")
-const fs = require("fs")
 const concat = require('concat-stream');
 
-var out = fs.openSync("./out.log", "a")
-var stdin = fs.openSync("./in.log", "a")
-
-var err = fs.openSync("./out.log", "a")
 const PTYService = require("./PTYService")
 // const {  } = require("process")
 
@@ -255,12 +250,12 @@ class SocketService {
                 console.log("Disconnected Socket: ", socket.id)
                 console.log('----- ESPERCLI PROCESS', this.espercliPty.getPid())
                 console.log('----- ADB PROCESS', this.espercliPty.getPid())
-                if (this.adbPty !== null) {
-                    this.adbPty.killPtyProcess()
-                }
-                if (this.espercliPty !== null) {
-                    this.espercliPty.killPtyProcess()
-                }
+                // if (this.adbPty !== null) {
+                //     this.adbPty.killPtyProcess()
+                // }
+                // if (this.espercliPty !== null) {
+                //     this.espercliPty.killPtyProcess()
+                // }
             })
 
             socket.on("startadb", (ipport) => {
