@@ -6,6 +6,7 @@ class PTY {
     constructor(socket, name) {
         this.shell = "bash"
 
+        this.name = name
         this.ptyProcess = null
         this.socket = socket
 
@@ -42,7 +43,12 @@ class PTY {
             }, time)
         }
 
-        interval(3000)
+        if(this.name === 'adb')
+            interval(3000)
+    }
+
+    getPid() {
+        return this.ptyProcess.pid
     }
 
     killPtyProcess() {
@@ -58,7 +64,7 @@ class PTY {
 
     sendToClient(data) {
         // Emit data to socket.io client in an event "output"
-        this.socket.emit("output", data)
+        this.socket.emit(`${this.name}output`, data)
     }
 }
 
