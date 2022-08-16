@@ -250,12 +250,14 @@ class SocketService {
                 console.log("Disconnected Socket: ", socket.id)
                 console.log('----- ESPERCLI PROCESS', this.espercliPty.getPid())
                 console.log('----- ADB PROCESS', this.espercliPty.getPid())
-                // if (this.adbPty !== null) {
-                //     this.adbPty.killPtyProcess()
-                // }
-                // if (this.espercliPty !== null) {
-                //     this.espercliPty.killPtyProcess()
-                // }
+
+                // Graceful process termination
+                if (this.adbPty.getPid() !== null) {
+                    process.kill(this.adbPty.getPid(), 'SIGTERM')
+                }
+                if (this.espercliPty.getPid() !== null) {
+                    process.kill(this.espercliPty.getPid(), 'SIGTERM')
+                }
             })
 
             socket.on("startadb", (ipport) => {
