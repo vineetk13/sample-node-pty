@@ -20,8 +20,14 @@ class PTY {
             name: `process-${this.name}`,
             cwd: "/", // Which path should terminal start - HOME
             env: process.env, // Pass environment variables
-            cols: 250,
-            // rows: 25,
+            cols: 100,
+            rows: 25,
+        })
+
+        this.ptyProcess.onExit((exitcode, signal) => {
+            console.log('------ ON EXIT PTY PROCESS CODE: ', exitcode)
+            console.log('------ ON EXIT PTY PROCESS signal: ', signal)
+
         })
 
         // Add a "data" event listener.
@@ -52,7 +58,7 @@ class PTY {
     }
 
     killPtyProcess() {
-        this.ptyProcess.kill()
+        this.ptyProcess.kill('SIGINT')
     }
 
     // Use this function to send in the input to Pseudo Terminal process.

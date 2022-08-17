@@ -83,30 +83,6 @@ class SocketService {
             //     )
             // })
             deviceinitProcess.stderr.on("data", (data) => {
-                // fs.readFile("./out.log", "utf8", (err, data) => {
-                //     if (err) {
-                //         console.error(err)
-                //         return
-                //     }
-                //     console.log("------ STDOUT FROM FILE", data)
-                // })
-                // console.log(
-                //     "-- STD OUT: ",
-                //     deviceinitProcess.stdout.listenerCount("data")
-                // )
-                // console.log(
-                //     "-- STD OUT: ",
-                //     deviceinitProcess.stdout.readableDidRead
-                // )
-                // console.log("-- STD OUT: ", deviceinitProcess.stdout.readable)
-                // console.log(
-                //     "-- STD OUT: ",
-                //     deviceinitProcess.stdout.listeners("data")
-                // )
-
-                // console.log('---- IS STDOUT PAUSED AFTER STDERR: ',deviceinitProcess.stdout.prependListener('data'))
-                deviceinitProcess.stdout.resume()
-
                 deviceinitProcessError = data.toString()
                 console.error(`---------init process stderr:\n${data}`)
             })
@@ -154,26 +130,6 @@ class SocketService {
             })
         }
 
-        const execInitialize = (deviceName) => {
-            io.emit("startingInit")
-            exec(
-                `espercli secureadb connect -d ${deviceName}`,
-                (err, stdout, stderr) => {
-                    if (err) {
-                        io.emit("initialized", {
-                            success: false,
-                            message: `Failed`,
-                            data: err,
-                        })
-                        console.log("-----exec error: ", err)
-                    }
-
-                    console.log("----exec stdout: ", stdout)
-                    console.log("----exec stderr: ", stderr)
-                }
-            )
-        }
-
         const deviceInitialize = (devicename, socket) => {
             io.emit("startingInit")
             this.espercliPty = new PTYService(socket, "espercli")
@@ -181,15 +137,18 @@ class SocketService {
             this.espercliPty.write(`espercli secureadb connect -d ${devicename}\n`)
         }
 
-        const preconfigure = (socket) => {
+        const preconfigure = (socket, configData) => {
             const preconfigProcess = spawn("espercli", ["configure", "-s"], {
                 cwd: "/",
             })
             preconfigProcess.stdin.setEncoding("utf-8")
             preconfigProcess.stdout.pipe(process.stdout)
 
-            preconfigProcess.stdin.write("olpcj\n")
-            preconfigProcess.stdin.write("f6hpTc8nnRgo6WrAanTCnGgE9gcMWD\n")
+            // preconfigProcess.stdin.write("olpcj\n")
+            // preconfigProcess.stdin.write("f6hpTc8nnRgo6WrAanTCnGgE9gcMWD\n")
+
+            preconfigProcess.stdin.write(`${configData.enterprise}\n`)
+            preconfigProcess.stdin.write(`${configData.token}\n`)
             preconfigProcess.stdin.end()
 
             let preconfigProcessOutput = ""
@@ -252,12 +211,18 @@ class SocketService {
                 console.log('----- ADB PROCESS', this.espercliPty.getPid())
 
                 // Graceful process termination
-                if (this.adbPty.getPid() !== null) {
-                    process.kill(this.adbPty.getPid(), 'SIGTERM')
+                if (this.adbPty !== null) {
+                    console.log('----- adb pty kill -----')
+                    this.adbPty.killPtyProcess()
+                    this.adbPty = null
+                   
                 }
-                if (this.espercliPty.getPid() !== null) {
-                    process.kill(this.espercliPty.getPid(), 'SIGTERM')
+                if (this.espercliPty !== null) {
+                    this.espercliPty.killPtyProcess()
+                    this.espercliPty = null
                 }
+
+                this.socket = null
             })
 
             socket.on("startadb", (ipport) => {
@@ -276,7 +241,13 @@ class SocketService {
             //     deviceInitialize(devicename)
             // })
 
-            if (socket.connected) preconfigure(this.socket)
+            if (socket.connected) {
+                socket.emit("getCreds", (response) => {
+                    console.log('-------- FETCH CREDS RESPONSE: ', response)
+                    if(response.status === "Success")
+                        preconfigure(this.socket, response.data)
+                })
+            }
 
             
         })
