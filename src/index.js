@@ -2,6 +2,7 @@ const http = require("http")
 const SocketService = require("./SocketService")
 
 const server = http.createServer((req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', '*')
     res.write("Terminal Server Running.")
     res.end()
 })
