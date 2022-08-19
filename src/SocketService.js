@@ -25,7 +25,7 @@ class SocketService {
 
         const io = new Server(server, {
             cors: {
-                origin: "http://localhost:3000",
+                origin: ["https://ylhrn.esper.cloud", "http://localhost:3000"],
             },
             path: `/${process.env.NODEPTY_SERVER_PATH}/`
         })
