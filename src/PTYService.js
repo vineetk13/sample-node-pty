@@ -9,6 +9,7 @@ class PTY {
         this.name = name
         this.ptyProcess = null
         this.socket = socket
+        this.stopCondition = false
 
         // Initialize PTY process.
         this.startPtyProcess()
@@ -20,7 +21,7 @@ class PTY {
             name: `process-${this.name}`,
             cwd: "/", // Which path should terminal start - HOME
             env: process.env, // Pass environment variables
-            cols: 100,
+            cols: 150,
             rows: 25,
         })
 
@@ -33,6 +34,11 @@ class PTY {
         // Add a "data" event listener.
         this.ptyProcess.onData((data) => {
             // Whenever terminal generates any data, send that output to socket.io client to display on UI
+            this.stopCondition = Buffer.byteLength(data) > 1000
+            console.log('------ stop condition on pty data:', this.stopCondition)
+            if(this.stopCondition){
+                this.ptyProcess.pause()
+            }
             this.sendToClient(data)
         })
 
@@ -70,7 +76,12 @@ class PTY {
 
     sendToClient(data) {
         // Emit data to socket.io client in an event "output"
-        this.socket.emit(`${this.name}output`, data)
+        this.socket.emit(`${this.name}output`, data, (ackResponse) => {
+            if(ackResponse === true){
+                this.stopCondition = false
+                this.ptyProcess.resume()
+            }
+        })
     }
 }
 

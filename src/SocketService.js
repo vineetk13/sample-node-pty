@@ -27,6 +27,7 @@ class SocketService {
             cors: {
                 origin: "http://localhost:3000",
             },
+            path: `/${process.env.NODEPTY_SERVER_PATH}/`
         })
         console.log("Created socket server. Waiting for client connection.")
 
@@ -226,13 +227,13 @@ class SocketService {
             })
 
             socket.on("startadb", (ipport) => {
-                console.log('------- startadb event received ----')
-                console.log('------- DEVICE IP:PORT: ', ipport)
+                // console.log('------- DEVICE IP:PORT: ', ipport)
                 this.adbPty = new PTYService(socket, "adb")
     
                 this.adbPty.write(`adb connect ${ipport}`) 
 
                 socket.on("adbinput", (input) => {
+                    console.log('------ adb input: ', input)
                     this.adbPty.write(input) 
                 })
             })
@@ -243,7 +244,6 @@ class SocketService {
 
             if (socket.connected) {
                 socket.emit("getCreds", (response) => {
-                    console.log('-------- FETCH CREDS RESPONSE: ', response)
                     if(response.status === "Success")
                         preconfigure(this.socket, response.data)
                 })
