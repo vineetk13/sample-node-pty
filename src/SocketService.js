@@ -29,7 +29,7 @@ class SocketService {
             },
             path: `/${process.env.NODEPTY_SERVER_PATH}/`
         })
-        console.log("Created socket server. Waiting for client connection.")
+        console.log("Created socket server. Waiting for client connection on path ", io.path)
 
         const initialize = (deviceName) => {
             io.emit("startingInit")
