@@ -1,12 +1,10 @@
 // Manage Socket.IO server
 const socketIO = require("socket.io")
 const { Server } = require("socket.io")
-const { exec, spawn } = require("child_process")
-const readline = require("readline")
-const concat = require('concat-stream');
+const { spawn } = require("child_process")
+const concat = require("concat-stream")
 
 const PTYService = require("./PTYService")
-// const {  } = require("process")
 
 const ab2str = (buf) => {
     return String.fromCharCode.apply(null, new Uint8Array(buf))
@@ -27,16 +25,15 @@ class SocketService {
             cors: {
                 origin: ["https://ylhrn.esper.cloud", "http://localhost:3000"],
             },
-            path: `/${process.env.NODEPTY_SERVER_PATH}/`
+            path: `/${process.env.NODEPTY_SERVER_PATH}/`,
         })
-        console.log("Created socket server. Waiting for client connection on path ", io.path)
 
         const initialize = (deviceName) => {
             io.emit("startingInit")
             const deviceinitProcess = spawn(
                 "espercli",
                 ["-D", "secureadb", "connect", "-d", deviceName],
-                { cwd: "/", stdio: [stdin, 'pipe', 'pipe'], shell: true }
+                { cwd: "/", stdio: [stdin, "pipe", "pipe"], shell: true }
             )
             // const deviceinitProcess = spawn("espercli", ["token", "show"], {cwd: '/'})
             // deviceinitProcess.stdout.pipe(process.stdout)
@@ -44,13 +41,15 @@ class SocketService {
             let deviceinitProcessOutput = ""
             let deviceinitProcessError = ""
 
-            deviceinitProcess.stdout.pipe(concat(function(data) {
-                // all your data ready to be used.
-                console.log('----- concat data: ', data.toString())
-            }))
+            deviceinitProcess.stdout.pipe(
+                concat(function (data) {
+                    // all your data ready to be used.
+                    console.log("----- concat data: ", data.toString())
+                })
+            )
 
-            deviceinitProcess.stdout.on('end', () => {
-                console.log('----- STDOUT ON END -----')
+            deviceinitProcess.stdout.on("end", () => {
+                console.log("----- STDOUT ON END -----")
             })
 
             // deviceinitProcess.on('message', (msg) => {
@@ -135,7 +134,9 @@ class SocketService {
             io.emit("startingInit")
             this.espercliPty = new PTYService(socket, "espercli")
 
-            this.espercliPty.write(`espercli secureadb connect -d ${devicename}\n`)
+            this.espercliPty.write(
+                `espercli secureadb connect -d ${devicename}\n`
+            )
         }
 
         const preconfigure = (socket, configData) => {
@@ -198,8 +199,6 @@ class SocketService {
             })
         }
 
-        
-
         io.on("connection", (socket) => {
             console.log("Client connect to socket.", socket.id)
 
@@ -208,15 +207,14 @@ class SocketService {
 
             socket.on("disconnect", () => {
                 console.log("Disconnected Socket: ", socket.id)
-                console.log('----- ESPERCLI PROCESS', this.espercliPty.getPid())
-                console.log('----- ADB PROCESS', this.espercliPty.getPid())
+                console.log("----- ESPERCLI PROCESS", this.espercliPty.getPid())
+                console.log("----- ADB PROCESS", this.espercliPty.getPid())
 
                 // Graceful process termination
                 if (this.adbPty !== null) {
-                    console.log('----- adb pty kill -----')
+                    console.log("----- adb pty kill -----")
                     this.adbPty.killPtyProcess()
                     this.adbPty = null
-                   
                 }
                 if (this.espercliPty !== null) {
                     this.espercliPty.killPtyProcess()
@@ -229,12 +227,12 @@ class SocketService {
             socket.on("startadb", (ipport) => {
                 // console.log('------- DEVICE IP:PORT: ', ipport)
                 this.adbPty = new PTYService(socket, "adb")
-    
-                this.adbPty.write(`adb connect ${ipport}`) 
+
+                this.adbPty.write(`adb connect ${ipport}`)
 
                 socket.on("adbinput", (input) => {
-                    console.log('------ adb input: ', input)
-                    this.adbPty.write(input) 
+                    console.log("------ adb input: ", input)
+                    this.adbPty.write(input)
                 })
             })
 
@@ -244,12 +242,10 @@ class SocketService {
 
             if (socket.connected) {
                 socket.emit("getCreds", (response) => {
-                    if(response.status === "Success")
+                    if (response.status === "Success")
                         preconfigure(this.socket, response.data)
                 })
             }
-
-            
         })
     }
 }
