@@ -10,6 +10,8 @@ ENV GRADLE_HOME=/opt/gradle/gradle-5.4.1
 ENV ANDROID_HOME=/opt/android
 ENV PATH=$PATH:$GRADLE_HOME/bin:/opt/gradlew:$ANDROID_HOME/emulator:$ANDROID_HOME/tools/bin:$ANDROID_HOME/platform-tools
 
+# Create non-root user
+RUN groupadd -r myuser && useradd -r -g myuser myuser
 
 RUN apt-get update && apt-get install -y curl
 RUN apt-get install -y build-essential
@@ -20,6 +22,11 @@ RUN aptitude install -y npm
 RUN npm update -g npm 
 RUN npm cache clean --force
 RUN npm install --production
+
+# Set non-root user
+USER myuser
+
+RUN PS1="username@tenant $ "
 
 # Bundle app source
 COPY . ./
